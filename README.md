@@ -101,7 +101,7 @@ We interpret `σ(z)` as the model's estimated probability that the flight arrive
 
 ### Step 2: The cost function
 
-Training means adjusting `w1`, `w2`, and `b` until the model's predictions are as close to the true labels as possible. We need a way to measure "how wrong" the model currently is. That measure is the **binary cross-entropy** (also called log loss):
+Training means adjusting `w1`, `w2`, and `b` until the model's predictions are as close to the true labels as possible. We need a way to measure how wrong the model currently is. That measure is the **binary cross-entropy** (also called log loss):
 
 ```
 J(w, b) = −(1/m) × Σ [ y × log(ŷ) + (1 − y) × log(1 − ŷ) ]
@@ -109,38 +109,33 @@ J(w, b) = −(1/m) × Σ [ y × log(ŷ) + (1 − y) × log(1 − ŷ) ]
 
 where `m` is the number of training examples, `y` is the true label (0 or 1), and `ŷ = σ(z)` is the predicted probability.
 
-The logic is intuitive:
-- When `y = 1` (late flight) and `ŷ` is close to 0 (model said "probably on time"), `−log(ŷ)` blows up — large penalty.
-- When `y = 0` (on-time flight) and `ŷ` is close to 1 (model said "probably late"), `−log(1 − ŷ)` blows up — large penalty.
-- Confident correct predictions get very small loss.
+The intuition is straightforward. When a flight is actually late (`y = 1`) and the model predicted a low probability of being late, `−log(ŷ)` becomes very large — heavy penalty. When a flight is on time (`y = 0`) and the model said it was probably late, `−log(1 − ŷ)` blows up — heavy penalty again. Confident correct predictions get very small loss. The model is pushed to be both accurate and confident.
 
-An important property: binary cross-entropy is **strictly convex** in the weights. The loss surface has exactly one minimum. Gradient descent will always find it, regardless of where we start.
+Binary cross-entropy is **strictly convex** in the weights. That means the loss surface has exactly one minimum. Gradient descent will always find it, regardless of where it starts. When `w = 0` and `b = 0`, every prediction is exactly 0.5, giving an initial cost of `−log(0.5) = log(2) ≈ 0.6931`. Every run should start here.
 
-When `w = 0` and `b = 0`, every training example gets `ŷ = 0.5`, and the initial cost is `−log(0.5) = log(2) ≈ 0.6931`. Every run should start here.
+### Step 3: Deriving the partial derivatives
 
-### Step 3: Deriving the gradients
+To descend the cost surface, we need the **partial derivatives** of `J` with respect to each parameter: how much does the cost change if we nudge `w1`, `w2`, or `b` by a tiny amount?
 
-To move downhill on the cost surface, we need to know which direction is downhill. That is the gradient — the vector of partial derivatives of `J` with respect to each parameter.
-
-Applying the chain rule through the loss → sigmoid → linear combination:
+Applying the chain rule through the loss → sigmoid → linear combination gives a surprisingly clean result:
 
 ```
-∂J/∂w = (1/m) × X^T × (ŷ − y)      [vectorized form]
+∂J/∂w = (1/m) × Xᵀ × (ŷ − y)      [vectorized form]
 ∂J/∂b = (1/m) × sum(ŷ − y)
 ```
 
-The residual `ŷ − y` appears directly. The gradient with respect to each weight is simply the average residual, weighted by the corresponding feature values across all training examples. This is elegant — it looks exactly like the gradient for linear regression. That similarity is not a coincidence; it falls out of the properties of the sigmoid paired with cross-entropy.
+The term `(ŷ − y)` is the residual — the gap between what the model predicted and what actually happened. The partial derivative with respect to each weight is simply the average residual across all training examples, weighted by that feature's value. This is structurally identical to the gradient in linear regression, and that is not a coincidence: it falls out of using cross-entropy loss with a sigmoid output.
 
-### Step 4: Updating the parameters
+### Step 4: The gradient descent update
 
-Each gradient descent step nudges the parameters in the opposite direction of the gradient:
+Each iteration, we move the parameters a small step in the direction opposite to the gradient:
 
 ```
 w := w − α × ∂J/∂w
 b := b − α × ∂J/∂b
 ```
 
-where `α` is the learning rate. We run this for 1,000 iterations using all 800 training examples in every step — this is **batch gradient descent**.
+where `α` is the **learning rate** — a positive number that controls how large each step is. Too large and the updates overshoot the minimum; too small and convergence is painfully slow. We run this for 1,000 iterations using all 800 training examples in every step — this is **batch gradient descent**, as opposed to stochastic or mini-batch variants that use a random subset each iteration.
 
 ---
 
@@ -152,9 +147,9 @@ Before spending time on training, we ran a numerical gradient check. For each pa
 numerical_gradient ≈ (J(θ + ε) − J(θ − ε)) / (2ε)
 ```
 
-We then compared this to our analytical gradient at the same parameter values. The maximum absolute difference across all three parameters was **2.99 × 10⁻¹¹** — consistent with floating-point arithmetic precision for double-precision numbers. The derivation was correct.
+We then compared this to our analytical gradient at the same parameter values. The maximum absolute difference across all three parameters was **2.99 × 10⁻¹¹** — consistent with floating-point precision for double-precision numbers. The derivation was correct.
 
-This kind of sanity check is worth running before any training loop. A gradient error will silently make the model train in the wrong direction, and the cost curves will look plausible but the final weights will be wrong.
+This sanity check is worth running before any training loop. A gradient error will silently push the model in the wrong direction, and the cost curves will look plausible while the final weights are wrong.
 
 ---
 
@@ -162,7 +157,7 @@ This kind of sanity check is worth running before any training loop. A gradient 
 
 ### The model learned the right boundary
 
-After 1,000 iterations at learning rate 0.1, the model converged to these parameters:
+After 1,000 iterations at learning rate 0.1, the model converged to:
 
 | Parameter | Value |
 |---|---|
@@ -170,7 +165,7 @@ After 1,000 iterations at learning rate 0.1, the model converged to these parame
 | w2 (scheduled departure hour weight) | 0.190 |
 | b (bias) | −1.055 |
 
-The weight on departure delay is about **17 times larger** than the weight on departure hour. The model learned, entirely from data, that departure delay is overwhelmingly the more important signal — which matches physical intuition. A flight that leaves an hour late will almost certainly arrive late.
+The weight on departure delay is about **17 times larger** than the weight on departure hour. The model learned, entirely from data, that departure delay is the dominant signal — which matches physical intuition.
 
 ### On 200 test flights it had never seen:
 
@@ -188,100 +183,85 @@ The confusion matrix:
 | **Actual: on time** | 148 (true negative) | 3 (false positive) |
 | **Actual: late** | 13 (false negative) | 36 (true positive) |
 
-The model caught 36 of the 49 late test flights (73.5% recall) while raising only 3 false alarms. The 13 it missed were flights that departed close to on time but still arrived late — cases where delay accumulated in the air rather than on the ground, which a linear boundary on these two features cannot capture.
+The model caught 36 of 49 late flights while raising only 3 false alarms. The 13 it missed were flights that departed close to on time but still arrived late — delay that accumulated in the air rather than on the ground, which a linear boundary on two features cannot capture.
 
 ---
 
 ## The Six Visualizations
 
-All six figures are generated by running `logistic_regression.py`. Here is what each one shows and what we observed.
+All six figures are generated by running `logistic_regression.py`.
 
-### Figure 1: The Confusion Matrix
+### Figure 1: Confusion Matrix
 
 ![Confusion matrix on 200 test flights](figures/fig1_confusion_matrix.png)
 
-**What it shows:** The 200 test predictions split into four quadrants: true negatives (on-time flights correctly called on time), false positives (on-time flights incorrectly flagged as late), false negatives (late flights the model missed), and true positives (late flights correctly identified).
+**What it shows:** The 200 test predictions split into four quadrants.
 
-**What we observed:** The dominant cell is true negatives (148) — the model correctly identifies most of the majority class. It raises very few false alarms (3 false positives out of 151 on-time flights, a 2% false alarm rate). The main cost is in false negatives: 13 of 49 late flights were missed. This asymmetry is a natural consequence of class imbalance. With 75.7% of flights on time, the model's learned boundary is biased slightly toward the majority class.
+**What we observed:** The dominant cell is true negatives (148). False alarms are very rare (3 out of 151 on-time flights). The main cost is false negatives: 13 of 49 late flights were missed, a natural consequence of class imbalance.
 
 ---
 
-### Figure 2: What the Training Data Looks Like
+### Figure 2: Training Data Scatter
 
 ![Scatter plot of 800 training flights](figures/fig2_training_scatter.png)
 
-**What it shows:** Each of the 800 training flights plotted in feature space: departure delay on the horizontal axis, scheduled departure hour on the vertical axis. Blue circles are on-time arrivals; orange triangles are late arrivals.
+**What it shows:** Each training flight in feature space: departure delay on the horizontal axis, scheduled hour on the vertical.
 
-**What we observed:** There is a very clear horizontal separation between the two classes. The orange triangles (late flights) cluster at higher departure delay values — roughly beyond 20 minutes — while the blue circles cluster tightly near zero and below. This tells us immediately that departure delay will drive the decision boundary.
-
-Scheduled departure hour (vertical axis) shows much weaker separation. Both classes span the full day. There is a slight tendency for late-arriving flights to occur later in the day, but it is weak. The boundary will end up nearly vertical in this plot — almost entirely determined by departure delay.
+**What we observed:** The two classes separate clearly along the horizontal axis. Late flights (orange triangles) cluster beyond roughly 20 minutes of delay; on-time flights (blue circles) cluster near zero. Scheduled departure hour shows much weaker separation — the boundary will end up nearly vertical.
 
 ---
 
-### Figure 3: How the Model Learned
+### Figure 3: Learning Curve
 
 ![Cost vs iteration during training](figures/fig3_cost_curve.png)
 
-**What it shows:** The binary cross-entropy cost on the training set at each iteration, from 0 to 1,000. Iteration 0 is before any update: cost = log(2) = 0.6931.
+**What it shows:** Binary cross-entropy cost at each of the 1,000 iterations.
 
-**What we observed:** The cost drops sharply in early iterations — from 0.693 to about 0.370 by iteration 100 — and then continues decreasing more slowly as the gradient shrinks near the minimum. By iteration 1,000 the cost is 0.305. A reference run of 50,000 iterations reaches 0.302, confirming that our model is effectively converged well before 1,000 iterations.
-
-The cost never increases at any point. That confirms two things: the learning rate of 0.1 is well-chosen (too large a rate would cause the cost to oscillate), and the gradient implementation is correct (a sign error in the gradient would push the cost upward).
+**What we observed:** Cost drops from 0.693 to about 0.370 by iteration 100, then continues more slowly to 0.305 at iteration 1,000. A reference run at 50,000 iterations reaches 0.302 — our model is effectively converged well before 1,000 steps.
 
 ---
 
-### Figure 4: The Final Decision Boundary
+### Figure 4: Final Decision Boundary
 
 ![Final decision boundary on 200 test flights](figures/fig4_final_boundary_test.png)
 
-**What it shows:** The 200 test flights plotted in feature space with the final learned decision boundary overlaid as a black line. Flights to the right of the line are predicted late; flights to the left are predicted on time.
+**What it shows:** Test flights with the learned boundary overlaid.
 
-**What we observed:** The boundary is a nearly vertical line at approximately 20 minutes of departure delay, with a slight negative slope — reflecting the small but nonzero weight on departure hour. The boundary separates the two classes cleanly for most of the test set.
-
-The 3 false positives sit to the right of the boundary: on-time flights that departed late but recovered time in the air. The 13 false negatives sit to the left: late-arriving flights that departed close to on time. These are physically reasonable misclassifications. A richer feature set — flight distance, weather, aircraft turnaround time — would be needed to separate them, and no linear boundary can do so from these two features alone.
+**What we observed:** A nearly vertical line at roughly 20 minutes of departure delay, with a slight negative slope from the small departure-hour weight. The 3 false positives sit to its right; the 13 false negatives to its left.
 
 ---
 
-### Figure 5: How the Boundary Evolved
+### Figure 5: Boundary Evolution
 
 ![Decision boundary at iterations 1, 10, 100, and 1000](figures/fig5_boundary_evolution.png)
 
-**What it shows:** Four snapshots of the decision boundary on the training data at iterations 1, 10, 100, and 1,000. The same training data appears in every panel; only the boundary changes.
+**What it shows:** Four snapshots of the boundary during training.
 
-**What we observed:**
-
-- **Iteration 1 (cost = 0.679):** After a single gradient step, the boundary is nearly flat. The weights are still close to zero, so the first step barely moves the boundary.
-- **Iteration 10 (cost = 0.582):** The boundary has started rotating. The gradient with respect to `w1` (departure delay) is larger because departure delay has a stronger correlation with the target, so that weight grows faster.
-- **Iteration 100 (cost = 0.370):** The boundary is already close to its final position. Most of the useful learning happened in the first 100 iterations.
-- **Iteration 1,000 (cost = 0.305):** The boundary has settled into its near-vertical final orientation. The change between iteration 100 and 1,000 is small — the model converged early and the last 900 iterations refined rather than transformed it.
+**What we observed:** At iteration 1 the boundary is nearly flat. By iteration 10 it has started rotating. By iteration 100 it is already close to its final position. The change between 100 and 1,000 is small — most learning happens early.
 
 ---
 
-### Figure 6: What Learning Rate Means in Practice
+### Figure 6: Learning Rate Comparison
 
 ![Cost vs iteration for three learning rates](figures/fig6_learning_rates.png)
 
-**What it shows:** The cost versus iteration for all three learning rates plotted together: α = 0.1 (blue solid), α = 0.01 (orange dashed), α = 0.001 (green dotted).
+**What it shows:** Cost curves for α = 0.1, 0.01, and 0.001 on the same axes.
 
 **What we observed:**
 
-| Learning rate | Cost at iteration 1,000 | Accuracy | F1-score |
+| Learning rate | Cost at 1,000 | Accuracy | F1-score |
 |---|---|---|---|
 | 0.1 | 0.305 | **92.0%** | **81.8%** |
 | 0.01 | 0.371 | 90.5% | 75.9% |
 | 0.001 | 0.583 | 90.0% | 74.4% |
 
-All three curves are strictly decreasing throughout training — none of the learning rates is too large to cause divergence. The difference is *speed*.
-
-At α = 0.1, the model converges well within 1,000 iterations and produces the best F1-score. At α = 0.01, convergence is about ten times slower — after 1,000 iterations it is roughly where the α = 0.1 model was after 110 iterations. At α = 0.001, the model has barely moved after 1,000 iterations and would need closer to 100,000 to converge.
-
-An interesting side effect: the two slower learning rates produce **100% precision** but very low recall. Because they have not fully converged, their decision boundaries are still far from optimal, so the model defaults to predicting "on time" for most examples. The few predictions of "late" happen to all be correct (high precision), but most actual late flights are missed (poor recall). F1-score captures this problem in a single number.
+All three curves decrease throughout — none diverges. The difference is speed. At α = 0.01, convergence is about ten times slower; at α = 0.001, the model has barely moved after 1,000 iterations. The two slower rates produce 100% precision but very low recall because they have not converged: the model defaults to predicting on time for most examples. F1-score captures the tradeoff in a single number.
 
 ---
 
-## The Full Numerical Summary
+## Full Numerical Summary
 
-### Cost at selected iterations across learning rates
+### Cost across learning rates
 
 | Alpha | Iter 0 | Iter 1 | Iter 10 | Iter 100 | Iter 1,000 |
 |---|---|---|---|---|---|
@@ -289,7 +269,7 @@ An interesting side effect: the two slower learning rates produce **100% precisi
 | 0.01 | 0.6931 | 0.6917 | 0.6793 | 0.5832 | 0.3705 |
 | 0.001 | 0.6931 | 0.6930 | 0.6917 | 0.6794 | 0.5833 |
 
-All three start at log(2) = 0.6931 — the expected cost when every prediction is exactly 0.5.
+All three start at log(2) = 0.6931 — the cost when every prediction is exactly 0.5.
 
 ### Full performance comparison (1,000 iterations)
 
@@ -299,31 +279,29 @@ All three start at log(2) = 0.6931 — the expected cost when every prediction i
 | 0.01 | 0.3705 | 86.9% | 90.5% | 100.0% | 61.2% | 75.9% |
 | 0.001 | 0.5833 | 85.9% | 90.0% | 100.0% | 59.2% | 74.4% |
 
-### Learned parameters and verification (α = 0.1, 1,000 iterations)
+### Learned parameters (α = 0.1, 1,000 iterations)
 
 | Parameter | Value |
 |---|---|
-| w1 — departure delay weight (standardized) | 3.215 |
-| w2 — departure hour weight (standardized) | 0.190 |
+| w1 — departure delay (standardized) | 3.215 |
+| w2 — departure hour (standardized) | 0.190 |
 | b — bias | −1.055 |
 | Gradient check: max absolute error | 2.99 × 10⁻¹¹ |
 | Reference run cost (50,000 iterations) | 0.3024 |
 
-The reference run at 50,000 iterations converges to `w1 = 3.853, w2 = 0.143, b = −0.964`. Our 1,000-iteration model is approaching these values: departure delay is on a convergent trajectory, departure hour is already close, and the boundary position and slope are effectively the same.
+The 50,000-iteration reference converges to `w1 = 3.853, w2 = 0.143, b = −0.964`. Our 1,000-iteration model is approaching these values: departure delay is on a convergent trajectory, departure hour is already close, and the boundary position and slope are effectively the same.
 
 ---
 
 ## What We Would Do Differently
 
-This model works well for what it is, but it has real limitations worth naming honestly.
+**Two features is limiting.** Departure delay explains most late arrivals, but some flights depart on time and still arrive late — headwinds, congested routes, tight turnarounds. Distance, carrier history, and time of year would sharpen the model.
 
-**Two features is limiting.** Departure delay explains most of the variance in late arrival, but there are flights that depart on time and still arrive late — the aircraft ran into headwinds, the flight was on a congested route, or the turnaround time was too tight. Features like flight distance, carrier on-time history, or time of year would sharpen the model without changing the architecture.
+**Linear boundary.** Logistic regression draws a straight line. The small cluster of on-time flights that departed late but recovered time is simply unreachable with this model family.
 
-**Linear boundary.** Logistic regression draws a straight line. Any part of the class boundary that is curved — such as the small cluster of on-time flights at high departure delays that made up time in the air — is simply unreachable with this model family.
+**Small sample.** 1,000 flights is a thin slice of 336,776. Metrics would be more stable across random seeds on a larger sample.
 
-**Small sample.** 1,000 flights is a small slice of 336,776. The evaluation metrics would be more stable across different random seeds on a larger sample.
-
-**Single split.** We report results for one fixed 80/20 split. Cross-validation across multiple splits would give a tighter estimate of generalisation performance.
+**Single split.** We report results for one fixed 80/20 split. Cross-validation would give a tighter estimate of generalisation performance.
 
 ---
 
@@ -350,7 +328,7 @@ Running `logistic_regression.py` will:
 
 | File | What it does |
 |---|---|
-| `logistic_regression.py` | The full implementation — model, training, evaluation, all six plots |
+| `logistic_regression.py` | Full implementation — model, training, evaluation, all six plots |
 | `prepare_dataset.py` | Samples 1,000 flights from nycflights13 and saves the CSV |
 | `flights_two_features.csv` | The 1,000-flight dataset |
 | `results.json` | Every metric for every learning rate, written by the main script |
