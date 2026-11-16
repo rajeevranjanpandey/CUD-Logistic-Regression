@@ -10,16 +10,17 @@ We built a logistic regression classifier completely from scratch — no scikit-
 
 By the end of training, the model correctly identified 92% of the 200 test flights it had never seen before.
 
+The sections below cover the full implementation: the dataset, the math, the training procedure, and what each of the six figures actually shows.
 
 ---
 
 ## The Starting Point: Why Build It from Scratch?
 
-Machine learning libraries like scikit-learn are genuinely useful. But when you call `LogisticRegression().fit(X, y)`, you hand the problem to a black box. You get a number at the end, but you lose the understanding of *why* that number comes out.
+Machine learning libraries like scikit-learn are genuinely useful. But when we call `LogisticRegression().fit(X, y)`, we hand the problem to a black box. We get a number at the end, but we lose the understanding of *why* that number comes out.
 
 The assignment for MAI 600 required that we implement the prediction function, the cost function, the gradient computation, the training loop, the train/test split, the feature scaling, and all evaluation metrics by hand. No shortcuts. That constraint turned out to be the most educational part of the project.
 
-When you have to derive the gradient yourself, you stop thinking of it as a formula and start understanding it as a physical thing: the direction the cost surface slopes at your current position, telling you which way to step.
+When we had to derive the gradient ourselves, we stopped thinking of it as a formula and started understanding it as a physical thing: the direction the cost surface slopes at your current position, telling you which way to step.
 
 ---
 
@@ -27,7 +28,7 @@ When you have to derive the gradient yourself, you stop thinking of it as a form
 
 We used the **nycflights13** dataset, which records every commercial flight that departed New York City's three airports — JFK, LaGuardia, and Newark — during 2013. The full dataset has 336,776 flights. We sampled 1,000 of them at random (seed 42, so the sample is exactly reproducible).
 
-We picked this dataset deliberately. We wanted a problem where the relationship between the features and the prediction makes physical sense — something you could explain to a non-technical person and have them nod along.
+We picked this dataset deliberately. We wanted a problem where the relationship between the features and the prediction makes physical sense — something we could explain to a non-technical person and have them nod along.
 
 **The two features we used:**
 
@@ -359,10 +360,10 @@ Running `logistic_regression.py` will:
 
 ## Group Members
 
-| Name | Student ID | Contributions |
-|---|---|---|
-| Rajeev Ranjan Pandey | 20250007918 | Dataset selection, feature engineering, mathematical derivation of all five formulas, model class implementation (sigmoid, fit, predict), all six visualizations, report writing |
-| Hussein Aboueldahab | 20250008083 | Data preprocessing (stratified split, z-score standardization), evaluation metrics from scratch (accuracy, precision, recall, F1, confusion matrix), learning rate comparison experiment, results analysis and discussion, report review |
+| Name | Contributions |
+|---|---|
+| Rajeev Ranjan Pandey | Dataset selection, feature engineering, mathematical derivation of all five formulas, model class implementation (sigmoid, fit, predict), all six visualizations, report writing |
+| Hussein Aboueldahab | Data preprocessing (stratified split, z-score standardization), evaluation metrics from scratch (accuracy, precision, recall, F1, confusion matrix), learning rate comparison experiment, results analysis and discussion, report review |
 
 ---
 
