@@ -1,7 +1,7 @@
 # Can We Predict a Late Flight Using Just Two Numbers?
 
 **MAI 600 — Mathematics and Statistics for AI**  
-**Rajeev Ranjan Pandey (20250007918) · Hussein Aboueldahab (20250008083)**  
+**Rajeev Ranjan Pandey · Hussein Aboueldahab **  
 Canadian University Dubai · November 2026
 
 ---
