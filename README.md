@@ -1,7 +1,7 @@
 # Can We Predict a Late Flight Using Just Two Numbers?
 
 **MAI 600 — Mathematics and Statistics for AI**  
-**Rajeev Ranjan Pandey · Hussein Aboueldahab **  
+**Rajeev Ranjan Pandey · Hussein Aboueldahab**  
 Canadian University Dubai · November 2026
 
 ---
@@ -10,7 +10,6 @@ We built a logistic regression classifier completely from scratch — no scikit-
 
 By the end of training, the model correctly identified 92% of the 200 test flights it had never seen before.
 
-This README tells the full story: why we built it this way, every decision we made, every equation we derived, and what the six charts actually show.
 
 ---
 
