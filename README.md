@@ -2,7 +2,7 @@
 
 Course project for MAI 600, Mathematics and Statistics for AI.
 
-**Group members:** Rajeev Ranjan Pandey (20250007918) and Hussein Aboueldahab (20250008083)
+**Group members:** Rajeev Ranjan Pandey  and Hussein Aboueldahab 
 
 A binary logistic regression classifier written from first principles in NumPy and trained with batch gradient descent. The model predicts whether a flight arrives 15 or more minutes late, using two features: departure delay in minutes and scheduled departure hour.
 
